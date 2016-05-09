@@ -1,13 +1,290 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="stylesheet" type="text/css" href="searchbar/css/style.css">
+    <link rel="stylesheet" type="text/css" href="searchbar/css/normalize.css">
+    <script type='text/javascript' src="searchbar/js/search.js"></script>
     <script src="https://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script type='text/javascript' src="scripts/instagramFunctions.js"></script>
+    <script type='text/javascript' src="scripts/style.js"></script>
+    <script type='text/javascript' src="scripts/maps.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyDD3o_vzkcWmw4-yDtuFZ0F4lioqWn8eU8"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/highcharts-more.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.3.5/tabletop.min.js"></script>
     <script>
+
+      $("h1").click(function(){
+        goBack();
+        console.log("in click function")
+      });
+
+      function doSearch(){ //searches for ig users based on value in search-box
+        removeAll();
+        centerSearchBar();
+        var search = document.getElementById('search-box').value;
+        console.log(search);
+        searchUsers(search, function(response){
+          if(response.length !== 0){
+            display_search(response);
+            centerSearchBar();
+          }else{
+            $("h1").remove();
+            $("body").prepend("<h1>"+search+" cannot be found...</h1>");
+          }
+        });
+      }
+
+      function getresultAttr(thing){ //when a user is clicked on
+        index = thing.id;
+        username = thing.title;
+        searchUsers(username, function(list){
+          if(list[index].id === null){
+            $("h1").remove();
+            $("body").prepend("<h1>"+username+" cannot be accessed...</h1>");
+          }else{
+          getUserPhotos(list[index].id, function(photos){
+            if(photos.length <= 0){
+              noneValid(username);
+            }
+            else{
+              tuckSearchBar();
+              display_photos(photos);
+            }
+          });
+          }
+        });
+      }
+
+      function getphotoAttr(thing){ //when a photo is clicked on
+        var index = thing.id;
+        var id = thing.title
+        getUserPhotos(id, function(photos){
+          console.log(photos[index]);
+          getNPhotos(photos[index], 4, function(response){
+            if(response === -1||response.length<=1){
+              console.log("err");
+              uncontested(photos[index].username);
+            }else{
+              console.log(response);
+              isolateChosen(index, "valid-photo")
+              display_nearby(photos[index], response);
+            }
+          });
+        });
+      }
+
     </script>
     <style>
+
+
+      body{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        flex-flow: column;
+        z-index: -1
+      }
+
+      h1{
+        margin: 10px;
+        padding:0;
+        position: relative;
+        top: 50px;
+        z-index: 1
+      }
+
+      .hide{
+        display: none;
+        height: 0;
+        width: 0;
+      }
+
+      .tobechosen{
+        -webkit-transition: left, 2s;
+        -webkit-transition: top, 2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        align-self: center;
+
+        padding: 10px;
+        margin: 5px;
+        background-color: pink;
+        width: 250px;
+        font-size: 12px;
+      }
+      .winningPhoto{
+        -webkit-transition: left, 2s;
+        -webkit-transition: top, 2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        align-self: center;
+
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        padding: 10px;
+        margin: 25px;
+        background-color: violet;
+        width: 250px;
+        font-size: 12px;
+        z-index: 0;
+      }
+      .chosen{
+        position:absolute;
+        top: 5px;
+        left: 5px;
+        margin: 25px;
+      }
+      .champion{
+        top: 5px;
+        left: 400px;
+        margin: 25px;
+      }
+
+      .users{
+        width: 300px;
+        display: flex;
+        background-color: white;
+        justify-content: center;
+        border: 2px solid purple;
+        top: 75px;
+      }
+      .photos{
+        width: 900px;
+        display: flex;
+        background-color: white;
+        border: 2px solid purple;
+        align-content:space-around;
+        justify-content: center;
+        top: 25px;
+      }
+      .search-center{
+        top: 50px;
+        left: 35px;
+      }
+      .search-bar{
+        justify-content: center;
+        position: relative;
+        align-items: center;
+        align-self: center;
+
+        flex-direction: row;
+        text-overflow: ellipsis;
+        -webkit-transition: position, 2s;
+
+      }
+      .tuck-search{
+        top: -45px;
+        left: 35px;
+      }
+      #search-container{
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        align-self: center;
+        position: relative;
+        flex-wrap: wrap;
+
+        flex-flow: wrap;
+        -webkit-transition: height, 2s;
+        -webkit-transition: top, 2s;
+        -webkit-transition: width, 2s;
+        -webkit-transition: background-color, 2s;
+        -webkit-transition: border-color, 2s;
+      }
+      .search-result{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        align-self: center;
+
+        padding: 10px;
+        margin: 5px;
+        background-color: pink;
+        border: 0px solid green;
+        width: 250px;
+        height: 150px;
+        font-size: 15px;
+      }
+      .search-result p{
+        padding: 0px;
+        margin: 1px;
+      }
+
+      .valid-photo{
+
+      }
+      .valid-photo p{
+        padding: 0px;
+        margin: 2px;
+
+      }
+      .caption-wrapper{
+        height: 25px;
+        width: 225px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        word-wrap: ellipsis;
+      }
+
+      #map{
+        display: block;
+        flex-direction: column;
+        position: relative;
+        top: 400px;
+        width: 900px;
+        height: 450px;
+        margin: 20px;
+        -webkit-transition: height, 2s;
+        -webkit-transition: width, 2s;
+        border-top: 4px solid purple;
+      }
+
+      #chart-container{
+        top: 400px;
+        position: relative;
+        width: 900px;
+        height: 450px;
+        margin: 20px;
+        border-top: 4px solid purple;
+      }
+
+      #crown{
+        position: absolute;
+        z-index: 1;
+      }
+      .champion-you{
+        top: -40px;
+        left: 375px;
+      }
+      .champion-other{
+        top: -40px;
+        right: 80px;
+      }
+
+
     </style>
   </head>
   <body>
+    <form class="search-bar search-center" action="javascript:doSearch();" name="form">
+      <input id="search-box" type="text" class="search-box" name="q" />
+      <label for="search-box"><span class="glyphicon glyphicon-search search-icon"></span></label>
+      <input type="submit" id="search-submit" name="s"/>
+    </form>
+    <div id="search-container" class="hide">
+      <img id="crown" class="hide" src="imgs/crown.jpg" width="150px;"/>
+    </div>
+    <div id="chart-container" class="hide" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+    <div id="map" class="hide"></div>
   </body>
 </html>
