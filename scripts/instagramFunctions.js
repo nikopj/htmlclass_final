@@ -159,7 +159,7 @@ function organizeStats(photos){
       mostComments.count = photos[i].comments;
       mostComments.username = photos[i].username;
     }
-    var weightedComment = photos[i].comments*2;
+    var weightedComment = photos[i].comments*10;
     var score = photos[i].likes+weightedComment;
     scores.push(score);
     if(score>highScore.score){
